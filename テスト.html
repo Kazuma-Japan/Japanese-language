@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>英単語クイズ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      line-height: 1.6;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .quiz-container {
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .question {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-left: 4px solid #ccc;
+    }
+    .correct {
+      border-left-color: green;
+    }
+    .incorrect {
+      border-left-color: red;
+    }
+    .unknown {
+      border-left-color: orange;
+    }
+    .hidden {
+      display: none;
+    }
+    .navigation {
+      margin-top: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 1rem;
+    }
+    button {
+      padding: 8px 16px;
+      margin: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>英単語クイズ</h1>
+<div class="quiz-container">
+  <div id="quiz-status"></div>
+  <div class="question" id="question-area"></div>
+
+  <div>
+    <label for="answerInput">意味を入力（わからない場合は「わからない」や「I don't know」と入力）</label>
+    <input type="text" id="answerInput" />
+  </div>
+  
+  <div class="navigation">
+    <button onclick="checkAnswer()">回答する</button>
+    <button onclick="nextQuestion()">次の問題へ</button>
+  </div>
+
+  <div id="result-area" class="result hidden"></div>
+</div>
+
+<script>
+/*
+  クイズ用データ配列。
+  - word: 出題する英単語またはフレーズ
+  - meaning: 正解の意味（日本語でOK）
+  - example1, example2: 例文2つ
+  
+  ★ポイント★
+  - 「意味」の比較はシンプルに小文字化しての部分一致で行います。
+    例）ユーザーの回答が meaning の一部を含んでいれば「正解」にする ゆるめ判定
+  - 「わからない」「i don't know」などの入力があれば「unknown」扱い
+*/
+
+const quizData = [
+  {
+    word: "bring yourself down",
+    meaning: "自分で自分を落ち込ませる",
+    example1: "Stop bringing yourself down. You have potential.",
+    example2: "Don't bring yourself down just because of a small mistake."
+  },
+  {
+    word: "for now",
+    meaning: "今のところ",
+    example1: "For now, let's just focus on finishing this project.",
+    example2: "We can ignore that minor issue for now."
+  },
+  {
+    word: "I was bound to ~ (be bound to ~)",
+    meaning: "〜する運命にある / 〜するのは確実だ",
+    example1: "He was bound to find out sooner or later.",
+    example2: "It was bound to happen eventually."
+  },
+  {
+    word: "on edge",
+    meaning: "神経質になっている / 不安な / 緊張している",
+    example1: "I'm on edge before a big exam.",
+    example2: "That horror movie put me on edge."
+  },
+  {
+    word: "He puts me on edge.",
+    meaning: "彼は私を不安にさせる",
+    example1: "He puts me on edge when he drives so fast.",
+    example2: "Whenever he's around, I feel on edge."
+  },
+  {
+    word: "give it a try",
+    meaning: "試してみる",
+    example1: "Why not give it a try before deciding?",
+    example2: "I'll give it a try and see how it goes."
+  },
+  {
+    word: "try",
+    meaning: "試す",
+    example1: "I want to try new foods when I travel.",
+    example2: "Try turning the key the other way."
+  },
+  {
+    word: "imprecise",
+    meaning: "不正確な / 曖昧な",
+    example1: "His explanation was too imprecise to understand.",
+    example2: "The measurement is imprecise due to old equipment."
+  },
+  {
+    word: "drawbacks",
+    meaning: "欠点 / 短所 / デメリット",
+    example1: "One drawback of remote work is isolation.",
+    example2: "Every option has its drawbacks."
+  },
+  {
+    word: "metric",
+    meaning: "指標 / 測定基準",
+    example1: "Customer satisfaction is a key metric for us.",
+    example2: "We need a clear metric to measure performance."
+  },
+  {
+    word: "turnover",
+    meaning: "売上高 / 離職率 / 回転率",
+    example1: "Our turnover last year was impressive.",
+    example2: "We have a high turnover rate in this department."
+  },
+  {
+    word: "fall in",
+    meaning: "崩れ落ちる / 整列する",
+    example1: "The roof fell in during the storm.",
+    example2: "Soldiers, fall in!"
+  },
+  {
+    word: "go way far",
+    meaning: "とても遠くまで行く / 極端に進む",
+    example1: "He went way far in his argument and offended everyone.",
+    example2: "Don't go way far with those jokes."
+  },
+  {
+    word: "incurred",
+    meaning: "負担した / 被った (損失・費用など)",
+    example1: "We incurred heavy costs last quarter.",
+    example2: "He incurred debts after losing his job."
+  },
+  {
+    word: "accrued",
+    meaning: "累積した / 蓄積された (特に利息など)",
+    example1: "The unpaid salary accrued over months.",
+    example2: "We must pay the accrued interest."
+  },
+  {
+    word: "obligations",
+    meaning: "義務 / 責任",
+    example1: "He has legal obligations to care for his child.",
+    example2: "Employees must follow company obligations."
+  },
+  {
+    word: "intangible",
+    meaning: "触れられない / 形のない",
+    example1: "Happiness is intangible but important.",
+    example2: "Brand value is often intangible."
+  },
+  {
+    word: "rusty",
+    meaning: "錆びついた / (スキルが)鈍った",
+    example1: "My English is a bit rusty.",
+    example2: "The old bike is rusty from the rain."
+  },
+  {
+    word: "take charge",
+    meaning: "主導権を握る / 指揮をとる",
+    example1: "Someone needs to take charge of this project.",
+    example2: "I decided to take charge of my own life."
+  },
+  {
+    word: "simultaneously",
+    meaning: "同時に",
+    example1: "They spoke simultaneously, causing confusion.",
+    example2: "We can handle multiple tasks simultaneously."
+  },
+  {
+    word: "be more hands on",
+    meaning: "より実践的にかかわる",
+    example1: "I quit so I could be more hands-on with my family.",
+    example2: "She wants to be more hands-on at the workshop."
+  },
+  {
+    word: "sketching (slang)",
+    meaning: "不安・疑念・怪しいと感じている",
+    example1: "She's sketching about you diving alone.",
+    example2: "He was sketching the entire time we were there."
+  },
+  {
+    word: "tweaking (slang)",
+    meaning: "極度に不安定 / パニック状態",
+    example1: "He was tweaking after too much caffeine.",
+    example2: "I start tweaking when I'm overly stressed."
+  },
+  {
+    word: "smuggler written all over him",
+    meaning: "密輸業者であることが一目でわかる",
+    example1: "He had 'smuggler' written all over him.",
+    example2: "The way he acted had 'liar' written all over him."
+  },
+  {
+    word: "blush",
+    meaning: "顔を赤らめる",
+    example1: "She started to blush when he complimented her.",
+    example2: "I always blush when I'm embarrassed."
+  },
+  {
+    word: "That's freaky",
+    meaning: "それは気味が悪い / 変だ",
+    example1: "That haunted house was freaky!",
+    example2: "It's freaky how similar they look."
+  },
+  {
+    word: "Low-hanging fruit",
+    meaning: "簡単に達成できるもの",
+    example1: "Let's tackle the low-hanging fruit first.",
+    example2: "Identifying low-hanging fruit gives quick wins."
+  },
+  {
+    word: "intact",
+    meaning: "無傷の / 損なわれていない",
+    example1: "The package arrived intact despite the rain.",
+    example2: "His reputation remained intact."
+  },
+  {
+    word: "pretty much",
+    meaning: "ほとんど / 大体",
+    example1: "That's pretty much what he told me to do.",
+    example2: "I'm pretty much done with my work."
+  },
+  {
+    word: "onto",
+    meaning: "~の上に / ~へ向けて",
+    example1: "He stepped onto the stage confidently.",
+    example2: "She held onto her beliefs no matter what."
+  },
+  {
+    word: "top up",
+    meaning: "補充する / 満タンにする",
+    example1: "I need to top up my phone's credit.",
+    example2: "He topped up the fuel tank before the trip."
+  },
+  {
+    word: "scuba gear",
+    meaning: "スキューバ用具",
+    example1: "Pack your scuba gear for the trip.",
+    example2: "She invested in new scuba gear."
+  },
+  {
+    word: "drop off",
+    meaning: "～を届ける / 置いていく",
+    example1: "I'll drop you off at the station.",
+    example2: "He dropped off the package at the front desk."
+  },
+  {
+    word: "pass down",
+    meaning: "受け継ぐ / 伝える",
+    example1: "This compass was passed down for generations.",
+    example2: "We pass down family recipes."
+  },
+  {
+    word: "the last guy who would ever ~",
+    meaning: "絶対に〜しそうにない人",
+    example1: "He's the last guy who would ever tell a lie.",
+    example2: "My dad is the last guy who would get lost at sea."
+  },
+  {
+    word: "I'm in denial",
+    meaning: "現実を受け入れない状態",
+    example1: "He was in denial about his addiction.",
+    example2: "I'm in denial about having to move."
+  },
+  {
+    word: "they tried to get me to believe",
+    meaning: "彼らは私に信じさせようとした",
+    example1: "They tried to get me to believe the story was real.",
+    example2: "She tried to get me to believe it was my fault."
+  },
+  {
+    word: "attain",
+    meaning: "達成する / 成し遂げる",
+    example1: "I hope to attain my goals this year.",
+    example2: "She attained a high level of success."
+  },
+  {
+    word: "daunting",
+    meaning: "気が遠くなる / 圧倒されるような",
+    example1: "Starting a new job can be daunting.",
+    example2: "The climb seemed daunting at first."
+  },
+  {
+    word: "foster",
+    meaning: "育成する / 促進する",
+    example1: "We aim to foster a culture of innovation.",
+    example2: "Parents should foster curiosity in children."
+  },
+  {
+    word: "array",
+    meaning: "多様 / 大量 / 配列",
+    example1: "They offer an array of services.",
+    example2: "We saw a wide array of options."
+  },
+  {
+    word: "a strict numerical scale",
+    meaning: "厳密な数値スケール",
+    example1: "We evaluated them on a strict numerical scale.",
+    example2: "The exam uses a strict numerical scale."
+  },
+  {
+    word: "with no rounding",
+    meaning: "四捨五入なしで",
+    example1: "Calculate the score with no rounding.",
+    example2: "We want an exact result with no rounding."
+  },
+  {
+    word: "poncey-ass boarding schools",
+    meaning: "超気取った寄宿学校",
+    example1: "They're mostly from poncey-ass boarding schools.",
+    example2: "He had that poncey-ass boarding school accent."
+  },
+  {
+    word: "the working-class derelicts",
+    meaning: "労働者階級の落ちこぼれ",
+    example1: "We hung out with the working-class derelicts.",
+    example2: "They called us working-class derelicts in jest."
+  },
+  {
+    word: "catastrophically stupid",
+    meaning: "壊滅的に愚かな",
+    example1: "Taking that risk would be catastrophically stupid.",
+    example2: "It was a catastrophically stupid decision."
+  },
+  {
+    word: "flying under the radar",
+    meaning: "目立たないように行動する",
+    example1: "He's been flying under the radar for years.",
+    example2: "We need to fly under the radar this time."
+  },
+  {
+    word: "aerial surveillance",
+    meaning: "航空監視",
+    example1: "They used drones for aerial surveillance.",
+    example2: "We have to avoid aerial surveillance."
+  },
+  {
+    word: "Prostitution",
+    meaning: "売春",
+    example1: "Prostitution is illegal in some areas.",
+    example2: "They were arrested for prostitution."
+  },
+  {
+    word: "begging for change",
+    meaning: "小銭を乞う",
+    example1: "He was begging for change by the store.",
+    example2: "I saw someone begging for change yesterday."
+  },
+  {
+    word: "a dirtbag marina rat",
+    meaning: "船着き場にたむろする嫌なやつ",
+    example1: "They call him a dirtbag marina rat.",
+    example2: "That dirtbag marina rat is always at the docks."
+  },
+  {
+    word: "Grady-White",
+    meaning: "グレイディ・ホワイト（ボートブランド）",
+    example1: "He suddenly got a new Grady-White boat.",
+    example2: "Owning a Grady-White is quite expensive."
+  },
+  {
+    word: "go dark",
+    meaning: "姿を消す / 連絡を絶つ",
+    example1: "We gotta go dark for a while.",
+    example2: "They went dark after the scandal."
+  },
+  {
+    word: "be implicated in a felony",
+    meaning: "重罪に巻き込まれる",
+    example1: "He was implicated in a felony case.",
+    example2: "I don't want to be implicated in a felony."
+  },
+  {
+    word: "bad karma",
+    meaning: "悪いカルマ",
+    example1: "Lying to others brings bad karma.",
+    example2: "Otherwise, it's bad karma."
+  },
+  {
+    word: "pass that off to",
+    meaning: "それを〜に渡す / 押し付ける",
+    example1: "We have to pass that off to the manager.",
+    example2: "He passed the blame off to me."
+  },
+  {
+    word: "for once",
+    meaning: "今回ばかりは",
+    example1: "For once, he's right.",
+    example2: "Actually, Pope's right for once."
+  },
+  {
+    word: "have total and complete amnesia",
+    meaning: "完全に何も覚えていないふりをする",
+    example1: "We need to have total and complete amnesia.",
+    example2: "Pretend you have total and complete amnesia about that incident."
+  },
+  {
+    word: "cop (slang)",
+    meaning: "手に入れる / 盗む",
+    example1: "He copped a new phone yesterday.",
+    example2: "She managed to cop those rare tickets online."
+  },
+  {
+    word: "Check out ~",
+    meaning: "見てみて / 確認して",
+    example1: "Check out this pic I got.",
+    example2: "Check out that new store in town."
+  },
+  {
+    word: "up at the Mason Outlet",
+    meaning: "Mason Outletにいた / 行っていた",
+    example1: "I was up at the Mason Outlet yesterday.",
+    example2: "He works up at the Mason Outlet on weekends."
+  },
+  {
+    word: "crabs was just goin' to town on it",
+    meaning: "カニがその獲物にむさぼりついていた",
+    example1: "The crabs were going to town on the leftover fish.",
+    example2: "They found some scraps and went to town."
+  },
+  {
+    word: "throw him over in the ice chest",
+    meaning: "彼をクーラーボックスに投げ入れる",
+    example1: "I figured I'd throw him over in the ice chest.",
+    example2: "We threw the catch over in the ice chest quickly."
+  }
+];
+
+// 現在の問題番号
+let currentIndex = 0;
+
+// 問題を画面に表示する関数
+function showQuestion() {
+  const questionArea = document.getElementById("question-area");
+  const resultArea = document.getElementById("result-area");
+  const quizStatus = document.getElementById("quiz-status");
+  const answerInput = document.getElementById("answerInput");
+
+  // 現在の問題データ
+  const currentData = quizData[currentIndex];
+
+  quizStatus.textContent = `問題 ${currentIndex + 1} / ${quizData.length}`;
+  questionArea.textContent = `【問題】英単語・フレーズ：「${currentData.word}」 の意味は？`;
+  resultArea.textContent = "";
+  resultArea.className = "result hidden";
+  answerInput.value = "";
+  answerInput.focus();
+}
+
+// 回答をチェックする関数
+function checkAnswer() {
+  const answerInput = document.getElementById("answerInput");
+  const userAnswer = answerInput.value.trim().toLowerCase();
+  const resultArea = document.getElementById("result-area");
+  resultArea.classList.remove("hidden");
+
+  const currentData = quizData[currentIndex];
+  const correctMeaning = currentData.meaning.toLowerCase();
+
+  // 「わからない」「i don't know」判定
+  if (userAnswer === "わからない" || userAnswer === "i don't know") {
+    resultArea.innerHTML = `<div class="unknown">
+      <strong>わからない</strong> と回答しました。<br>
+      <strong>【意味】</strong> ${currentData.meaning}<br>
+      <strong>【例文1】</strong> ${currentData.example1}<br>
+      <strong>【例文2】</strong> ${currentData.example2}
+    </div>`;
+    return;
+  }
+
+  // 正誤判定（簡易的に：meaningの一部が含まれていれば正解扱い）
+  if (correctMeaning.includes(userAnswer) || userAnswer.includes(correctMeaning)) {
+    // 正解
+    resultArea.innerHTML = `<div class="correct">
+      <strong>正解です！</strong><br>
+      <strong>【意味】</strong> ${currentData.meaning}<br>
+      <strong>【例文1】</strong> ${currentData.example1}<br>
+      <strong>【例文2】</strong> ${currentData.example2}
+    </div>`;
+  } else {
+    // 不正解
+    resultArea.innerHTML = `<div class="incorrect">
+      <strong>不正解です！</strong><br>
+      <strong>【意味】</strong> ${currentData.meaning}<br>
+      <strong>【例文1】</strong> ${currentData.example1}<br>
+      <strong>【例文2】</strong> ${currentData.example2}
+    </div>`;
+  }
+}
+
+// 次の問題に進む関数
+function nextQuestion() {
+  if (currentIndex < quizData.length - 1) {
+    currentIndex++;
+    showQuestion();
+  } else {
+    // 最後の問題が終わったらメッセージを表示
+    const questionArea = document.getElementById("question-area");
+    const resultArea = document.getElementById("result-area");
+    const quizStatus = document.getElementById("quiz-status");
+
+    quizStatus.textContent = "すべての問題が終了しました！";
+    questionArea.textContent = "お疲れさまでした。もう一度やりたい場合はページをリロードしてください。";
+    resultArea.innerHTML = "";
+    resultArea.className = "result hidden";
+  }
+}
+
+// 初期表示
+window.onload = function() {
+  showQuestion();
+};
+</script>
+
+</body>
+</html>
