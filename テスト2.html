@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>英単語クイズ（ランダム出題）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .quiz-container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .question, .answer {
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+    .completed {
+      font-size: 1.2em;
+      color: green;
+      text-align: center;
+      margin-top: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="quiz-container">
+  <h1>英単語クイズ</h1>
+  <p>「回答を見る」ボタンで意味・例文を表示し、「次の問題へ」で次へ進みます。全問終了で完了メッセージが出ます。</p>
+
+  <div id="quizArea">
+    <!-- 問題・解答表示エリア -->
+    <div id="questionBox" class="question"></div>
+    <div id="answerBox" class="answer hidden"></div>
+
+    <!-- ボタン類 -->
+    <button id="showAnswerBtn">回答を見る</button>
+    <button id="nextBtn" class="hidden">次の問題へ</button>
+  </div>
+  <div id="completedMessage" class="completed hidden">全問題が終了しました！お疲れさまでした。</div>
+</div>
+
+<script>
+/* =====================
+  1) クイズデータの作成
+     - question: 出題される英語表現・単語
+     - meaning: 意味や解説
+     - examples: 例文を2つ
+====================== */
+const quizData = [
+  {
+    question: "bring yourself down",
+    meaning: "自分で自分を落ち込ませる・自信をなくす。",
+    examples: [
+      "Don't bring yourself down with negative thoughts.",
+      "You shouldn't bring yourself down though."
+    ]
+  },
+  {
+    question: "for now",
+    meaning: "今のところ。",
+    examples: [
+      "For now, let's just focus on what we can do.",
+      "I'm not moving yet, so I'll stay here for now."
+    ]
+  },
+  {
+    question: "I was bound to ~",
+    meaning: "「〜する運命にある / いずれ〜することになっていた」",
+    examples: [
+      "He was bound to find out sooner or later.",
+      "It was bound to happen eventually."
+    ]
+  },
+  {
+    question: "on edge",
+    meaning: "「神経質になっている、緊張している」",
+    examples: [
+      "I'm on edge before important exams.",
+      "That horror movie put me on edge."
+    ]
+  },
+  {
+    question: "He puts me on edge",
+    meaning: "「彼は私を不安にさせる、緊張させる」",
+    examples: [
+      "He puts me on edge whenever he shows up unexpectedly.",
+      "The way he stares really puts me on edge."
+    ]
+  },
+  {
+    question: "He makes me nervous",
+    meaning: "「彼は私を不安にさせる」",
+    examples: [
+      "He makes me nervous by asking so many questions.",
+      "Large crowds always make me nervous."
+    ]
+  },
+  {
+    question: "He stresses me out",
+    meaning: "「彼は私にストレスを与える」",
+    examples: [
+      "My boss stresses me out with constant deadlines.",
+      "Arguing about money stresses me out."
+    ]
+  },
+  {
+    question: "He freaks me out",
+    meaning: "「彼は私をゾッとさせる、怖がらせる」",
+    examples: [
+      "His horror stories freak me out.",
+      "Spiders totally freak me out."
+    ]
+  },
+  {
+    question: "He puts me off",
+    meaning: "「彼は私をうんざりさせる、嫌にさせる」",
+    examples: [
+      "His rude comments put me off every time.",
+      "That smell really puts me off my meal."
+    ]
+  },
+  {
+    question: "give it a try",
+    meaning: "「試してみる」（カジュアルな表現）",
+    examples: [
+      "You should give yoga a try.",
+      "Why not give it a try before deciding?"
+    ]
+  },
+  {
+    question: "try",
+    meaning: "「試す」（動詞）",
+    examples: [
+      "I'll try my best to help you.",
+      "Try turning it off and on again."
+    ]
+  },
+  {
+    question: "imprecise",
+    meaning: "形容詞：不正確な、曖昧な。",
+    examples: [
+      "His explanation was too imprecise to understand.",
+      "Data from the survey was somewhat imprecise."
+    ]
+  },
+  {
+    question: "drawbacks",
+    meaning: "名詞：欠点、短所、デメリット。",
+    examples: [
+      "One of the drawbacks of remote work is isolation.",
+      "Every plan has potential drawbacks."
+    ]
+  },
+  {
+    question: "vary",
+    meaning: "動詞：「変動する」「異なる」。",
+    examples: [
+      "Opinions may vary depending on personal experience.",
+      "Prices vary from store to store."
+    ]
+  },
+  {
+    question: "metric",
+    meaning: "名詞：指標、測定基準 / メートル法。",
+    examples: [
+      "Revenue is a key metric for business performance.",
+      "We use the metric system in most countries."
+    ]
+  },
+  {
+    question: "turnover",
+    meaning: "名詞：売上高 / 離職率 / 回転率。",
+    examples: [
+      "The company's annual turnover rose by 20%.",
+      "High employee turnover can hurt morale."
+    ]
+  },
+  {
+    question: "fall in",
+    meaning: "動詞句：崩れ落ちる / 整列する / （恋に）落ちる。",
+    examples: [
+      "The old roof fell in during the storm.",
+      "The soldiers were told to fall in immediately."
+    ]
+  },
+  {
+    question: "go way far",
+    meaning: "「極端に進む / とても遠くまで行く」（強調表現）。",
+    examples: [
+      "He went way far with his insults.",
+      "Their travels went way far beyond our expectations."
+    ]
+  },
+  {
+    question: "incurred",
+    meaning: "動詞：（費用や損失を）負担した、被った。",
+    examples: [
+      "We incurred extra costs for last-minute changes.",
+      "The company incurred heavy losses this quarter."
+    ]
+  },
+  {
+    question: "accrued",
+    meaning: "動詞：（利息や費用が）時間とともに発生・累積した。",
+    examples: [
+      "The interest accrued over several months.",
+      "He must pay the accrued fees by the end of the year."
+    ]
+  },
+  {
+    question: "settle",
+    meaning: "動詞：清算する / 落ち着く / 定住する。",
+    examples: [
+      "We need to settle the bill before leaving.",
+      "They decided to settle in a small town."
+    ]
+  },
+  {
+    question: "obligations",
+    meaning: "名詞：義務、責任。",
+    examples: [
+      "Employees have legal obligations to follow company policies.",
+      "Family obligations kept her busy all weekend."
+    ]
+  },
+  {
+    question: "intangible",
+    meaning: "形容詞：触れられない、形のない、無形の。",
+    examples: [
+      "Happiness is an intangible concept you can't measure.",
+      "Goodwill is an intangible asset for a company."
+    ]
+  },
+  {
+    question: "rusty",
+    meaning: "形容詞：（スキルや知識が）鈍った、錆びた。",
+    examples: [
+      "My French is a bit rusty after years without practice.",
+      "The old bike is rusty from being left outside."
+    ]
+  },
+  {
+    question: "out of practice",
+    meaning: "「練習不足で下手になった」",
+    examples: [
+      "I'm out of practice in playing the piano.",
+      "He was out of practice after not running for months."
+    ]
+  },
+  {
+    question: "out of shape",
+    meaning: "「体力が落ちた、体がなまった」",
+    examples: [
+      "I'm so out of shape that I got tired quickly.",
+      "After the holidays, many people feel out of shape."
+    ]
+  },
+  {
+    question: "out of touch",
+    meaning: "「疎遠になった、情報に疎い」",
+    examples: [
+      "He's been out of touch with modern technology.",
+      "I lost her number, so we're out of touch now."
+    ]
+  },
+  {
+    question: "brush up on",
+    meaning: "「（スキルなどを）やり直して磨く、復習する」",
+    examples: [
+      "I need to brush up on my Spanish before the trip.",
+      "He's brushing up on his coding skills."
+    ]
+  },
+  {
+    question: "bring down",
+    meaning: "「落ち込ませる、気分を下げる」",
+    examples: [
+      "Criticism can really bring people down.",
+      "That sad movie brought me down."
+    ]
+  },
+  {
+    question: "take charge",
+    meaning: "「主導権を握る、指揮を取る」",
+    examples: [
+      "She decided to take charge of the project.",
+      "Someone needs to take charge in a crisis."
+    ]
+  },
+  {
+    question: "simultaneously",
+    meaning: "「同時に」",
+    examples: [
+      "We spoke simultaneously and couldn't hear each other.",
+      "This software can run multiple tasks simultaneously."
+    ]
+  },
+  {
+    question: "I quit it so I could be more hands on",
+    meaning: "「より実践的に関わるために、それを辞めた」",
+    examples: [
+      "I quit my desk job so I could be more hands on in the field.",
+      "She quit it so she could be more hands on with her startup."
+    ]
+  },
+  {
+    question: "she's sketching about you diving",
+    meaning: "「彼女はあなたが潜ることについて不安／疑念を抱いている（スラング）」",
+    examples: [
+      "She's sketching about you diving without proper training.",
+      "My mom was sketching about me diving alone."
+    ]
+  },
+  {
+    question: "Tweaking",
+    meaning: "「極度に不安定で落ち着かない、パニック状態」（スラング）",
+    examples: [
+      "He was tweaking after too many energy drinks.",
+      "Stop tweaking! Everything will be fine."
+    ]
+  },
+  {
+    question: "smuggler written all over him",
+    meaning: "「一目で密輸業者だとわかる」",
+    examples: [
+      "That guy has 'smuggler' written all over him.",
+      "She looked at him and said, 'Danger is written all over you.'"
+    ]
+  },
+  {
+    question: "written all over (someone)",
+    meaning: "「（人）を見れば一目瞭然」",
+    examples: [
+      "Guilt is written all over his face.",
+      "Excitement was written all over the children's faces."
+    ]
+  },
+  {
+    question: "blush",
+    meaning: "「赤面する、恥ずかしさや照れで顔が赤くなる」",
+    examples: [
+      "She began to blush when everyone stared at her.",
+      "He always blushes when complimented."
+    ]
+  },
+  {
+    question: "That's freaky",
+    meaning: "「それは奇妙だ / 怖い」",
+    examples: [
+      "Did you hear that sound? That's freaky!",
+      "A haunted house at midnight? That's freaky."
+    ]
+  },
+  {
+    question: "Low-hanging fruit",
+    meaning: "「簡単に手に入るもの、すぐ達成できる目標」",
+    examples: [
+      "Let's tackle the low-hanging fruit first to gain momentum.",
+      "Focusing on low-hanging fruit can boost early success."
+    ]
+  },
+  {
+    question: "intact",
+    meaning: "「損なわれていない、無傷の」",
+    examples: [
+      "The package arrived intact despite the rough handling.",
+      "All artifacts remained intact after centuries."
+    ]
+  },
+  {
+    question: "pretty much",
+    meaning: "「ほとんど、大体」",
+    examples: [
+      "I'm pretty much done with the report.",
+      "That's pretty much what he told me to do."
+    ]
+  },
+  {
+    question: "onto",
+    meaning: "前置詞：「〜の上に（移動）」や「〜に気づいて」",
+    examples: [
+      "He stepped onto the stage confidently.",
+      "I think we're onto something big with this idea."
+    ]
+  },
+  {
+    question: "top up",
+    meaning: "「補充する、満タンにする」",
+    examples: [
+      "I need to top up my phone credit.",
+      "Could you top up my glass with water, please?"
+    ]
+  },
+  {
+    question: "scuba gear",
+    meaning: "「スキューバ用具」",
+    examples: [
+      "Don't forget your scuba gear for the dive trip.",
+      "He bought new scuba gear before visiting the reef."
+    ]
+  },
+  {
+    question: "drop off",
+    meaning: "「〜を届ける、〜を置いていく」",
+    examples: [
+      "I'll drop off the documents at your office.",
+      "Can you drop me off at the station?"
+    ]
+  },
+  {
+    question: "which was passed down for generations",
+    meaning: "「何世代にもわたって受け継がれてきた」",
+    examples: [
+      "This recipe was passed down for generations in my family.",
+      "That compass was passed down for generations."
+    ]
+  },
+  {
+    question: "My dad is the last guy who would ever get lost at sea",
+    meaning: "「私の父は海で迷うような人では絶対にない」",
+    examples: [
+      "He's the last guy who would panic under pressure.",
+      "She's the last person who would lie to you."
+    ]
+  },
+  {
+    question: "I'm in denial",
+    meaning: "「現実を受け入れられずに否定している状態」",
+    examples: [
+      "He won't admit the truth; he's in denial.",
+      "I was in denial about my bad habits."
+    ]
+  },
+  {
+    question: "they tried to get me to believe",
+    meaning: "「彼らは私に信じさせようとした」",
+    examples: [
+      "They tried to get me to believe their wild story.",
+      "He tried to get me to believe he was innocent."
+    ]
+  },
+  {
+    question: "attain",
+    meaning: "動詞：「達成する、成し遂げる」",
+    examples: [
+      "She worked hard to attain her goals.",
+      "We can attain better results with consistent effort."
+    ]
+  },
+  {
+    question: "scrib",
+    meaning: "スラング「書く / 'scribble'の略（走り書きする）」",
+    examples: [
+      "I just scribbled a note to myself.",
+      "He scribbed some ideas on a napkin."
+    ]
+  },
+  {
+    question: "it looks daunting",
+    meaning: "「それは気が遠くなるように見える、圧倒されそう」",
+    examples: [
+      "The workload looks daunting, but let's start step by step.",
+      "Climbing that mountain seems daunting."
+    ]
+  },
+  {
+    question: "foster",
+    meaning: "動詞：「育成する、助長する / 養育する」",
+    examples: [
+      "We aim to foster a sense of community.",
+      "She decided to foster a rescue puppy."
+    ]
+  },
+  {
+    question: "array",
+    meaning: "名詞：「配列 / 多様な集まり」",
+    examples: [
+      "We have an array of options to choose from.",
+      "There's an impressive array of desserts at the buffet."
+    ]
+  },
+  {
+    question: "a strict numerical scale",
+    meaning: "「厳密な数値スケール」",
+    examples: [
+      "They evaluated performance on a strict numerical scale.",
+      "We use a strict numerical scale with no rounding."
+    ]
+  },
+  {
+    question: "with no rounding",
+    meaning: "「四捨五入なしで」",
+    examples: [
+      "We calculated scores with no rounding.",
+      "They want exact figures with no rounding."
+    ]
+  },
+  {
+    question: "They're mostly from poncey-ass boarding schools",
+    meaning: "「彼らのほとんどは超気取った寄宿学校出身だ」（スラング）",
+    examples: [
+      "Those kids are from poncey-ass boarding schools in the city.",
+      "He acts like he's from a poncey-ass background."
+    ]
+  },
+  {
+    question: "There's us and our friends, the working-class derelicts",
+    meaning: "「私たちと私たちの友人、労働者階級の落ちこぼれたちがいる」",
+    examples: [
+      "He calls us the working-class derelicts, but we own it.",
+      "There's me and my pals—just working-class derelicts."
+    ]
+  },
+  {
+    question: "Taking it would be catastrophically stupid",
+    meaning: "「それを取るのは壊滅的に愚かな行為だ」",
+    examples: [
+      "Trying that stunt would be catastrophically stupid.",
+      "Skipping the safety check is catastrophically stupid."
+    ]
+  },
+  {
+    question: "flying under the radar",
+    meaning: "「目立たないように行動する」",
+    examples: [
+      "We tried flying under the radar to avoid attention.",
+      "He's flying under the radar at work, hoping to stay unnoticed."
+    ]
+  },
+  {
+    question: "no aerial surveillance",
+    meaning: "「航空監視なし」",
+    examples: [
+      "They traveled at night with no aerial surveillance.",
+      "The region had no aerial surveillance systems in place."
+    ]
+  },
+  {
+    question: "Prostitution",
+    meaning: "名詞：「売春」",
+    examples: [
+      "He was arrested for soliciting prostitution.",
+      "Prostitution is illegal in some countries but regulated in others."
+    ]
+  },
+  {
+    question: "Shit, one time I saw this dude begging for change",
+    meaning: "「くそ、一度あの男が小銭を求めて物乞いしているのを見た」",
+    examples: [
+      "One time, I saw him begging for change by the store.",
+      "He was begging for change because he ran out of gas."
+    ]
+  },
+  {
+    question: "a dirtbag marina rat",
+    meaning: "「船着き場でたむろしている嫌なやつ（スラング）」",
+    examples: [
+      "They called him a dirtbag marina rat for hanging around docks all day.",
+      "That dirtbag marina rat never paid his mooring fees."
+    ]
+  },
+  {
+    question: "If that means we get to keep the money",
+    meaning: "「もしそれでお金を持ち続けられるというなら」",
+    examples: [
+      "If that means we get to keep the money, I'm in.",
+      "He agreed only if that means we get to keep the money."
+    ]
+  },
+  {
+    question: "We gotta go dark",
+    meaning: "「姿を消す、通信を断つ」",
+    examples: [
+      "When things got risky, we decided we gotta go dark.",
+      "The spies went dark to avoid detection."
+    ]
+  },
+  {
+    question: "Bad karma to be implicated in a felony",
+    meaning: "「重罪に巻き込まれるのは悪いカルマだ」",
+    examples: [
+      "It's just bad karma to be implicated in a felony, man.",
+      "He avoided any action that could implicate him in a felony."
+    ]
+  },
+  {
+    question: "Otherwise, it's bad karma",
+    meaning: "「そうしないと悪いカルマだ」",
+    examples: [
+      "We should return the lost wallet; otherwise, it's bad karma.",
+      "Help others; otherwise, it's bad karma."
+    ]
+  },
+  {
+    question: "We have to pass that off to Lana Grubbs",
+    meaning: "「私たちはそれをラナ・グラブズに渡さなければならない」",
+    examples: [
+      "We have to pass that off to Lana Grubbs for safekeeping.",
+      "He wants us to pass that off to Lana Grubbs ASAP."
+    ]
+  },
+  {
+    question: "Actually, Pope's right for once",
+    meaning: "「実は今回ばかりはポープが正しい」",
+    examples: [
+      "I rarely agree with him, but Pope's right for once.",
+      "Actually, Pope's right for once about the plan."
+    ]
+  },
+  {
+    question: "We need to have total and complete amnesia",
+    meaning: "「完全に何も覚えていない（ことにする）必要がある」",
+    examples: [
+      "We need total and complete amnesia about that incident.",
+      "Act like you saw nothing—total and complete amnesia."
+    ]
+  },
+  {
+    question: "copped",
+    meaning: "スラング：「手に入れた、（時に盗んだ）」",
+    examples: [
+      "He just copped a new laptop yesterday.",
+      "Somehow he copped a brand-new Grady-White boat."
+    ]
+  },
+  {
+    question: "Check out this pic I got",
+    meaning: "「この写真を見てよ」",
+    examples: [
+      "Check out this pic I got from the concert.",
+      "Hey, check out this pic I got on my phone."
+    ]
+  },
+  {
+    question: "Well, I was up at the Mason Outlet",
+    meaning: "「ええと、メイソンアウトレットの方にいたんだ」",
+    examples: [
+      "Well, I was up at the Mason Outlet doing some shopping.",
+      "I was up at the Mason Outlet last weekend."
+    ]
+  },
+  {
+    question: "the crabs was just goin' to town on it",
+    meaning: "「カニがそれをむさぼるように食べていた」",
+    examples: [
+      "I dropped some bait, and the crabs were just goin' to town on it.",
+      "The raccoons found the trash and went to town on it."
+    ]
+  },
+  {
+    question: "So, I figured the best thing to do was, uh... throw him over in the ice chest",
+    meaning: "「だから、一番いい方法は彼をクーラーボックスに放り込むことだと思ったんだ」",
+    examples: [
+      "The fish was still alive, so I threw him over in the ice chest.",
+      "He decided to throw it in the cooler for safe transport."
+    ]
+  }
+];
+
+// ==============
+// 2) シャッフル関数
+// ==============
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const r = Math.floor(Math.random() * (i + 1));
+    [array[i], array[r]] = [array[r], array[i]];
+  }
+  return array;
+}
+
+// ==============
+// 3) クイズ管理用変数
+// ==============
+let shuffledQuiz = shuffleArray([...quizData]); // 配列をコピーしてシャッフル
+let currentIndex = 0;
+
+// HTML要素取得
+const questionBox = document.getElementById("questionBox");
+const answerBox = document.getElementById("answerBox");
+const showAnswerBtn = document.getElementById("showAnswerBtn");
+const nextBtn = document.getElementById("nextBtn");
+const completedMessage = document.getElementById("completedMessage");
+
+// ==============
+// 4) 問題を表示する関数
+// ==============
+function displayQuestion() {
+  const qData = shuffledQuiz[currentIndex];
+  questionBox.textContent = `問題 ${currentIndex + 1}/${shuffledQuiz.length}： ${qData.question}`;
+
+  // 答え（meaning + examples）はいったん非表示＆クリア
+  answerBox.classList.add("hidden");
+  answerBox.innerHTML = "";
+
+  // ボタン切り替え
+  showAnswerBtn.classList.remove("hidden");
+  nextBtn.classList.add("hidden");
+}
+
+// ==============
+// 5) 答えを表示する関数
+// ==============
+function displayAnswer() {
+  const qData = shuffledQuiz[currentIndex];
+
+  // 意味を表示
+  const meaningPara = document.createElement("p");
+  meaningPara.textContent = `【意味】${qData.meaning}`;
+
+  // 例文2つ表示
+  const examplesList = document.createElement("ul");
+  qData.examples.forEach((ex) => {
+    const li = document.createElement("li");
+    li.textContent = ex;
+    examplesList.appendChild(li);
+  });
+
+  answerBox.appendChild(meaningPara);
+  answerBox.appendChild(examplesList);
+
+  answerBox.classList.remove("hidden");
+
+  // ボタン切り替え
+  showAnswerBtn.classList.add("hidden");
+  nextBtn.classList.remove("hidden");
+}
+
+// ==============
+// 6) 次の問題へ
+// ==============
+function goToNextQuestion() {
+  currentIndex++;
+  if (currentIndex < shuffledQuiz.length) {
+    displayQuestion();
+  } else {
+    // 全問終了
+    questionBox.textContent = "";
+    answerBox.textContent = "";
+    showAnswerBtn.classList.add("hidden");
+    nextBtn.classList.add("hidden");
+    completedMessage.classList.remove("hidden");
+  }
+}
+
+// 初回の問題表示
+displayQuestion();
+
+// イベント設定
+showAnswerBtn.addEventListener("click", displayAnswer);
+nextBtn.addEventListener("click", goToNextQuestion);
+</script>
+
+</body>
+</html>
