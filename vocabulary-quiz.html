@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英単語クイズ</title>
+  <style>
+    :root {
+      --primary: #3a86ff;
+      --secondary: #8338ec;
+      --success: #38b000;
+      --text: #2b2d42;
+      --light-text: #8d99ae;
+      --background: #f8f9fa;
+      --card: #ffffff;
+      --border: #e9ecef;
+      --shadow: rgba(0, 0, 0, 0.05);
+      --transition: all 0.3s ease-in-out;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 640px;
+      margin: 2rem auto;
+      width: 100%;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    
+    .instructions {
+      font-size: 0.9rem;
+      color: var(--light-text);
+      max-width: 36rem;
+      margin: 0 auto 1.5rem;
+    }
+    
+    .card {
+      background-color: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 4px 24px var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background-color: var(--border);
+      position: relative;
+    }
+    
+    .progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      transition: width 0.4s ease-out;
+    }
+    
+    .question-container {
+      padding: 2rem;
+    }
+    
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .counter {
+      font-size: 0.9rem;
+      color: var(--light-text);
+      background-color: var(--background);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+    }
+    
+    .question {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      text-align: center;
+      min-height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .answer {
+      background-color: var(--background);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    
+    .answer.active {
+      opacity: 1;
+      max-height: 500px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .meaning {
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .examples {
+      list-style-type: none;
+    }
+    
+    .examples li {
+      margin-bottom: 0.5rem;
+      position: relative;
+      padding-left: 1.2rem;
+    }
+    
+    .examples li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--secondary);
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    button {
+      flex: 1;
+      padding: 0.9rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(58, 134, 255, 0.2);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    #nextBtn {
+      background-color: var(--secondary);
+    }
+    
+    #nextBtn:hover {
+      box-shadow: 0 4px 12px rgba(131, 56, 236, 0.2);
+    }
+    
+    .icon {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    
+    .completed {
+      text-align: center;
+      padding: 3rem 2rem;
+      display: none;
+    }
+    
+    .completed.active {
+      display: block;
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    .completion-circle {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background-color: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2.5rem;
+    }
+    
+    .completion-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    
+    .completion-message {
+      color: var(--light-text);
+      margin-bottom: 2rem;
+    }
+    
+    .restart-btn {
+      display: inline-flex;
+      margin: 0 auto;
+      background-color: var(--success);
+    }
+    
+    .restart-btn:hover {
+      box-shadow: 0 4px 12px rgba(56, 176, 0, 0.2);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 1s ease-in-out;
+    }
+    
+    @media (max-width: 640px) {
+      .container {
+        margin-top: 1rem;
+      }
+      
+      .question-container {
+        padding: 1.5rem;
+      }
+      
+      .question {
+        font-size: 1.3rem;
+      }
+      
+      .buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>英単語クイズ</h1>
+      <p class="instructions">シンプルな英単語クイズで語彙力を高めましょう。「回答を見る」ボタンで意味と例文を表示し、「次の問題へ」で進みます。</p>
+    </header>
+    
+    <div class="card" id="quizCard">
+      <div class="progress-bar">
+        <div class="progress" id="progressBar"></div>
+      </div>
+      
+      <div class="question-container" id="questionArea">
+        <div class="question-header">
+          <div class="counter" id="counter">0/0</div>
+        </div>
+        
+        <div class="question" id="questionText"></div>
+        
+        <div class="answer" id="answerArea">
+          <div class="meaning" id="meaningText"></div>
+          <ul class="examples" id="examplesList"></ul>
+        </div>
+        
+        <div class="buttons">
+          <button id="showAnswerBtn">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            回答を見る
+          </button>
+          <button id="nextBtn">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M5 12h14"></path>
+              <path d="m12 5 7 7-7 7"></path>
+            </svg>
+            次の問題へ
+          </button>
+        </div>
+      </div>
+      
+      <div class="completed" id="completedArea">
+        <div class="completion-circle">
+          <svg class="icon" viewBox="0 0 24 24" width="40" height="40">
+            <path d="M20 6 9 17l-5-5"></path>
+          </svg>
+        </div>
+        <h2 class="completion-title">おめでとう！</h2>
+        <p class="completion-message">全ての問題が終了しました。お疲れ様でした。</p>
+        <button class="restart-btn" id="restartBtn">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M1 4v6h6"></path>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          もう一度チャレンジ
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 問題データ配列
+    const quizData = [
+      {
+        question: "Pay for college in advance",
+        meaning: "大学の授業料を事前に支払う",
+        examples: [
+          "例: Many parents start saving early to pay for college in advance.",
+          "例: It's a good idea to pay for college in advance to avoid student loan debt."
+        ]
+      },
+      {
+        question: "Take for granted",
+        meaning: "当然のことと考える/当然のこととして受け入れる",
+        examples: [
+          "例: People often take for granted the convenience of modern technology.",
+          "例: Don't take your loved ones for granted; show them how much you appreciate them."
+        ]
+      },
+      {
+        question: "Granted (接続詞)",
+        meaning: "（確かに～だけど/～は当然だが）",
+        examples: [
+          "例: Granted, he is busy, but he always makes time for his family.",
+          "例: Granted, the task is difficult, but it is not impossible."
+        ]
+      },
+      {
+        question: "Did you spill your drink?",
+        meaning: "相手が飲み物をこぼしたか尋ねる、飲み物をこぼすことを指摘する",
+        examples: [
+          "例: Did you spill your drink on the table?",
+          "例: Be careful not to spill your drink."
+        ]
+      },
+      {
+        question: "look up to ～",
+        meaning: "～を尊敬する/～を見上げる",
+        examples: [
+          "例: Children often look up to their parents for guidance.",
+          "例: She has always looked up to her older sister."
+        ]
+      },
+      {
+        question: "down payment",
+        meaning: "頭金/前払い金",
+        examples: [
+          "例: They saved for years to have enough for a down payment on a house.",
+          "例: A larger down payment often results in better loan terms."
+        ]
+      },
+      {
+        question: "take (time) off / take off (time)",
+        meaning: "休暇を取る",
+        examples: [
+          "例: I need to take some time off to rest and recharge.",
+          "例: She decided to take off two weeks for her honeymoon."
+        ]
+      },
+      {
+        question: "get the day off",
+        meaning: "休みをもらう",
+        examples: [
+          "例: I got the day off to attend my sister's graduation.",
+          "例: He asked his boss if he could get the day off for a medical appointment."
+        ]
+      },
+      {
+        question: "on business",
+        meaning: "仕事で/業務で",
+        examples: [
+          "例: He travels to Tokyo on business twice a month.",
+          "例: She's currently in New York on business, attending conferences."
+        ]
+      },
+      {
+        question: "in order to",
+        meaning: "～するために",
+        examples: [
+          "例: She studied hard in order to pass the exam.",
+          "例: We arrived early in order to get good seats."
+        ]
+      },
+      {
+        question: "pick up (習得する)",
+        meaning: "（言語・知識・習慣などを）自然に習得する",
+        examples: [
+          "例: He picked up French while living in Paris for a year.",
+          "例: Children pick up new skills quickly through observation and play."
+        ]
+      },
+      {
+        question: "come across",
+        meaning: "偶然～に出会う/～を見つける",
+        examples: [
+          "例: I came across an old photo album while cleaning the attic.",
+          "例: She came across some interesting information during her research."
+        ]
+      },
+      {
+        question: "work out",
+        meaning: "（問題などが）うまくいく、解決する",
+        examples: [
+          "例: I hope everything works out for you in your new job.",
+          "例: The situation was complicated, but it all worked out in the end."
+        ]
+      },
+      {
+        question: "turn up",
+        meaning: "現れる/見つかる",
+        examples: [
+          "例: He didn't RSVP, but he turned up at the party anyway.",
+          "例: The missing document finally turned up in a different folder."
+        ]
+      },
+      {
+        question: "put together",
+        meaning: "組み立てる/まとめる",
+        examples: [
+          "例: We put together a presentation for the meeting tomorrow.",
+          "例: The furniture was difficult to put together without the instructions."
+        ]
+      },
+      {
+        question: "hold on",
+        meaning: "（電話で）待つ/しっかりつかまる",
+        examples: [
+          "例: Please hold on while I transfer your call.",
+          "例: Hold on tight when the roller coaster goes upside down!"
+        ]
+      },
+      {
+        question: "get along with",
+        meaning: "～と仲良くする/うまくやっていく",
+        examples: [
+          "例: He gets along with all his colleagues at work.",
+          "例: It's important to get along with your neighbors."
+        ]
+      },
+      {
+        question: "take over",
+        meaning: "引き継ぐ/乗っ取る",
+        examples: [
+          "例: The assistant manager will take over when the manager retires.",
+          "例: A larger company tried to take over their business."
+        ]
+      },
+      {
+        question: "bring up",
+        meaning: "育てる/話題にする",
+        examples: [
+          "例: She was brought up by her grandmother after her parents died.",
+          "例: I don't want to bring up that sensitive topic at the dinner table."
+        ]
+      },
+      {
+        question: "figure out",
+        meaning: "理解する/解決策を見つける",
+        examples: [
+          "例: I'm trying to figure out how to solve this math problem.",
+          "例: We need to figure out a better way to manage our time."
+        ]
+      },
+      {
+        question: "drop by/in",
+        meaning: "ちょっと立ち寄る",
+        examples: [
+          "例: Feel free to drop by anytime you're in the neighborhood.",
+          "例: I'll drop in to see how you're doing after your surgery."
+        ]
+      },
+      {
+        question: "get through",
+        meaning: "（困難な状況を）乗り切る/終える",
+        examples: [
+          "例: It was a difficult time, but we got through it together.",
+          "例: I finally got through all the paperwork."
+        ]
+      },
+      {
+        question: "call off",
+        meaning: "中止する/取りやめる",
+        examples: [
+          "例: The outdoor concert was called off due to rain.",
+          "例: They decided to call off the wedding a week before the date."
+        ]
+      },
+      {
+        question: "run into",
+        meaning: "偶然出会う/遭遇する",
+        examples: [
+          "例: I ran into my old classmate at the supermarket yesterday.",
+          "例: We ran into some problems while implementing the new system."
+        ]
+      },
+      {
+        question: "catch up",
+        meaning: "追いつく/遅れを取り戻す",
+        examples: [
+          "例: Let's meet for coffee and catch up on each other's lives.",
+          "例: I need to catch up on my reading for class."
+        ]
+      },
+      {
+        question: "let down",
+        meaning: "失望させる/がっかりさせる",
+        examples: [
+          "例: I don't want to let down the team by missing the deadline.",
+          "例: He felt let down when his friend didn't show up."
+        ]
+      },
+      {
+        question: "get away with",
+        meaning: "（悪いことをして）罰を免れる/うまく逃げ切る",
+        examples: [
+          "例: He thought he could get away with cheating on the test.",
+          "例: The thief almost got away with the robbery."
+        ]
+      },
+      {
+        question: "come up with",
+        meaning: "思いつく/考え出す",
+        examples: [
+          "例: We need to come up with a solution to this problem.",
+          "例: She came up with a brilliant idea for the project."
+        ]
+      },
+      {
+        question: "look forward to",
+        meaning: "～を楽しみに待つ",
+        examples: [
+          "例: I'm looking forward to seeing you next week.",
+          "例: We're looking forward to our vacation in Hawaii."
+        ]
+      },
+      {
+        question: "be fed up with",
+        meaning: "～にうんざりしている",
+        examples: [
+          "例: I'm fed up with your constant complaining.",
+          "例: She's fed up with the cold weather and wants to move somewhere warmer."
+        ]
+      },
+      {
+        question: "keep up with",
+        meaning: "～に遅れずについていく",
+        examples: [
+          "例: It's hard to keep up with all the new technology.",
+          "例: She exercises regularly to keep up with her energetic children."
+        ]
+      },
+      {
+        question: "look down on",
+        meaning: "～を見下す/軽蔑する",
+        examples: [
+          "例: He looks down on people who didn't go to college.",
+          "例: Don't look down on someone just because they have a different background."
+        ]
+      },
+      {
+        question: "run out of",
+        meaning: "～を使い果たす/切らす",
+        examples: [
+          "例: We ran out of milk, so I need to go to the store.",
+          "例: The car ran out of gas on the highway."
+        ]
+      },
+      {
+        question: "live up to",
+        meaning: "～に応える/期待に添う",
+        examples: [
+          "例: The movie didn't live up to the hype.",
+          "例: She always tries to live up to her parents' expectations."
+        ]
+      },
+      {
+        question: "put up with",
+        meaning: "～を我慢する/耐える",
+        examples: [
+          "例: I can't put up with this noise anymore.",
+          "例: She has to put up with a long commute to work every day."
+        ]
+      },
+      {
+        question: "make the most of",
+        meaning: "～を最大限に活用する",
+        examples: [
+          "例: Let's make the most of the good weather and go hiking.",
+          "例: She made the most of her time in college by joining many clubs."
+        ]
+      },
+      {
+        question: "be exposed to",
+        meaning: "～にさらされる/触れる",
+        examples: [
+          "例: Children should be exposed to different cultures and languages.",
+          "例: The workers were exposed to harmful chemicals in the factory."
+        ]
+      },
+      {
+        question: "take advantage of",
+        meaning: "～を利用する/活用する",
+        examples: [
+          "例: You should take advantage of the free tutoring services at school.",
+          "例: They took advantage of the sale to buy a new TV."
+        ]
+      },
+      {
+        question: "relate to",
+        meaning: "～に共感する/関連する",
+        examples: [
+          "例: I can really relate to your experience of moving to a new city.",
+          "例: This chapter relates to what we discussed last week."
+        ]
+      },
+      {
+        question: "cope with",
+        meaning: "～に対処する/乗り切る",
+        examples: [
+          "例: She is learning strategies to cope with stress.",
+          "例: How do you cope with working night shifts?"
+        ]
+      },
+      {
+        question: "account for",
+        meaning: "～を説明する/理由を述べる/～の割合を占める",
+        examples: [
+          "例: He couldn't account for his whereabouts on the night of the incident.",
+          "例: Foreign tourists account for 30% of our customers."
+        ]
+      },
+      {
+        question: "associate with",
+        meaning: "～と関連付ける/付き合う",
+        examples: [
+          "例: I associate the smell of cinnamon with Christmas.",
+          "例: Parents worry about who their teenagers associate with."
+        ]
+      },
+      {
+        question: "abstain from",
+        meaning: "～を控える/慎む",
+        examples: [
+          "例: The doctor advised him to abstain from alcohol.",
+          "例: Some members abstained from voting on the controversial issue."
+        ]
+      },
+      {
+        question: "attribute to",
+        meaning: "～のせいにする/帰する",
+        examples: [
+          "例: He attributes his success to hard work and determination.",
+          "例: The increase in crime is often attributed to economic factors."
+        ]
+      },
+      {
+        question: "comply with",
+        meaning: "～に従う/準拠する",
+        examples: [
+          "例: All businesses must comply with safety regulations.",
+          "例: The student refused to comply with the teacher's instructions."
+        ]
+      },
+      {
+        question: "confide in",
+        meaning: "～に打ち明ける/信頼する",
+        examples: [
+          "例: She only confides in her closest friends.",
+          "例: If you're having problems, you can confide in me."
+        ]
+      },
+      {
+        question: "conform to",
+        meaning: "～に従う/適合する",
+        examples: [
+          "例: The new building must conform to local zoning laws.",
+          "例: Some teenagers feel pressure to conform to social norms."
+        ]
+      },
+      {
+        question: "coincide with",
+        meaning: "～と一致する/同時に起こる",
+        examples: [
+          "例: Our vacation coincided with a major festival in the city.",
+          "例: The rise in unemployment coincided with the economic downturn."
+        ]
+      },
+      {
+        question: "insist on",
+        meaning: "～を主張する/要求する",
+        examples: [
+          "例: He insisted on paying for dinner.",
+          "例: The teacher insists on complete silence during the test."
+        ]
+      },
+      {
+        question: "persist in",
+        meaning: "～を続ける/固執する",
+        examples: [
+          "例: Despite the difficulties, she persisted in her efforts.",
+          "例: If you persist in this behavior, there will be consequences."
+        ]
+      },
+      {
+        question: "resort to",
+        meaning: "～に訴える/～を最後の手段とする",
+        examples: [
+          "例: They had to resort to using candles when the power went out.",
+          "例: I don't want to resort to punishment, but I will if necessary."
+        ]
+      },
+      {
+        question: "adapt to",
+        meaning: "～に適応する/順応する",
+        examples: [
+          "例: It took time to adapt to living in a foreign country.",
+          "例: Animals must adapt to changes in their environment to survive."
+        ]
+      },
+      {
+        question: "appeal to",
+        meaning: "～に訴える/魅力的である",
+        examples: [
+          "例: The candidate's message appealed to young voters.",
+          "例: The idea of living in the countryside appeals to me."
+        ]
+      },
+      {
+        question: "aspire to",
+        meaning: "～を熱望する/目指す",
+        examples: [
+          "例: She aspires to become a doctor one day.",
+          "例: Many young players aspire to play in the national team."
+        ]
+      },
+      {
+        question: "adhere to",
+        meaning: "～に固執する/従う",
+        examples: [
+          "例: We must adhere to the schedule if we want to finish on time.",
+          "例: The company adheres to strict quality control standards."
+        ]
+      },
+      {
+        question: "amount to",
+        meaning: "～になる/相当する",
+        examples: [
+          "例: The total cost amounts to $500.",
+          "例: His contribution to the project amounted to very little."
+        ]
+      },
+      {
+        question: "cater to",
+        meaning: "～に応じる/合わせる",
+        examples: [
+          "例: This restaurant caters to vegetarians and vegans.",
+          "例: The new policy is designed to cater to the needs of working parents."
+        ]
+      },
+      {
+        question: "consent to",
+        meaning: "～に同意する/承諾する",
+        examples: [
+          "例: She finally consented to the medical procedure.",
+          "例: Both parties must consent to the terms of the agreement."
+        ]
+      },
+      {
+        question: "contribute to",
+        meaning: "～に貢献する/寄与する",
+        examples: [
+          "例: Regular exercise contributes to good health.",
+          "例: Everyone is expected to contribute to the team's success."
+        ]
+      },
+      {
+        question: "consist of",
+        meaning: "～から成る/構成される",
+        examples: [
+          "例: The committee consists of five members.",
+          "例: This dish consists of rice, vegetables, and chicken."
+        ]
+      },
+      {
+        question: "dispose of",
+        meaning: "～を処分する/廃棄する",
+        examples: [
+          "例: Batteries should be disposed of properly.",
+          "例: The company disposed of its outdated equipment."
+        ]
+      },
+      {
+        question: "dedicate to",
+        meaning: "～に捧げる/専念する",
+        examples: [
+          "例: She dedicated her life to helping others.",
+          "例: The book is dedicated to his late wife."
+        ]
+      },
+      {
+        question: "depend on",
+        meaning: "～に依存する/頼る",
+        examples: [
+          "例: Children depend on their parents for support and guidance.",
+          "例: The success of the project depends on everyone's cooperation."
+        ]
+      },
+      {
+        question: "devote to",
+        meaning: "～に専念する/捧げる",
+        examples: [
+          "例: He devoted his career to cancer research.",
+          "例: She devotes most of her free time to volunteer work."
+        ]
+      },
+      {
+        question: "evolve into",
+        meaning: "～に進化する/発展する",
+        examples: [
+          "例: What started as a small blog evolved into a major news site.",
+          "例: Their friendship gradually evolved into something more romantic."
+        ]
+      },
+      {
+        question: "indulge in",
+        meaning: "～に耽る/甘んじる",
+        examples: [
+          "例: She occasionally indulges in a piece of chocolate cake.",
+          "例: He indulges in reading science fiction novels on weekends."
+        ]
+      },
+      {
+        question: "object to",
+        meaning: "～に反対する/異議を唱える",
+        examples: [
+          "例: Many residents objected to the construction of the new highway.",
+          "例: I strongly object to being treated this way."
+        ]
+      },
+      {
+        question: "pertain to",
+        meaning: "～に関係する/適用される",
+        examples: [
+          "例: These rules pertain to all employees, regardless of position.",
+          "例: The article pertains to recent developments in artificial intelligence."
+        ]
+      },
+      {
+        question: "refer to",
+        meaning: "～を参照する/言及する",
+        examples: [
+          "例: Please refer to page 10 for more information.",
+          "例: He often refers to his childhood experiences in his novels."
+        ]
+      },
+      {
+        question: "subject to",
+        meaning: "～を条件とする/～にさらされる",
+        examples: [
+          "例: Approval is subject to a background check.",
+          "例: The coastal areas are subject to flooding during heavy rain."
+        ]
+      },
+      {
+        question: "subscribe to",
+        meaning: "～を購読する/～に賛同する",
+        examples: [
+          "例: I subscribe to several scientific journals.",
+          "例: Not everyone subscribes to that political ideology."
+        ]
+      },
+      {
+        question: "succumb to",
+        meaning: "～に屈する/負ける",
+        examples: [
+          "例: He finally succumbed to the pressure and agreed to their demands.",
+          "例: Many patients succumbed to the disease before a treatment was found."
+        ]
+      }
+    ];
+    
+    // DOM要素取得
+    const questionText = document.getElementById('questionText');
+    const meaningText = document.getElementById('meaningText');
+    const examplesList = document.getElementById('examplesList');
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const answerArea = document.getElementById('answerArea');
+    const showAnswerBtn = document.getElementById('showAnswerBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const questionArea = document.getElementById('questionArea');
+    const completedArea = document.getElementById('completedArea');
+    const restartBtn = document.getElementById('restartBtn');
+    
+    // クイズ管理変数
+    let currentQuestions = [];
+    let currentIndex = 0;
+    
+    // クイズを初期化する
+    function initQuiz() {
+      // ランダムに問題を選ぶ
+      currentQuestions = [...quizData].sort(() => Math.random() - 0.5);
+      currentIndex = 0;
+      
+      // 初期表示
+      updateProgressBar();
+      updateCounter();
+      showQuestion();
+      
+      // 表示エリアの切り替え
+      questionArea.style.display = 'block';
+      completedArea.style.display = 'none';
+      completedArea.classList.remove('active');
+    }
+    
+    // 質問を表示する
+    function showQuestion() {
+      const currentQuestion = currentQuestions[currentIndex];
+      
+      // 質問テキスト設定
+      questionText.textContent = currentQuestion.question;
+      questionText.classList.add('pulse');
+      
+      // アニメーション終了後にクラスを削除
+      setTimeout(() => {
+        questionText.classList.remove('pulse');
+      }, 1000);
+      
+      // 答え非表示
+      answerArea.classList.remove('active');
+      
+      // ボタン状態設定
+      showAnswerBtn.style.display = 'flex';
+      nextBtn.style.display = 'none';
+    }
+    
+    // 答えを表示する
+    function showAnswer() {
+      const currentQuestion = currentQuestions[currentIndex];
+      
+      // 意味テキスト設定
+      meaningText.textContent = `【意味】 ${currentQuestion.meaning}`;
+      
+      // 例文リスト作成
+      examplesList.innerHTML = '';
+      currentQuestion.examples.forEach(example => {
+        const li = document.createElement('li');
+        li.textContent = example;
+        examplesList.appendChild(li);
+      });
+      
+      // 答え表示
+      answerArea.classList.add('active');
+      
+      // ボタン状態設定
+      showAnswerBtn.style.display = 'none';
+      nextBtn.style.display = 'flex';
+    }
+    
+    // 次の問題へ進む
+    function nextQuestion() {
+      currentIndex++;
+      
+      if (currentIndex < currentQuestions.length) {
+        updateProgressBar();
+        updateCounter();
+        showQuestion();
+      } else {
+        // 全問終了
+        completeQuiz();
+      }
+    }
+    
+    // クイズ終了処理
+    function completeQuiz() {
+      questionArea.style.display = 'none';
+      completedArea.style.display = 'block';
+      
+      // アニメーション表示
+      setTimeout(() => {
+        completedArea.classList.add('active');
+      }, 100);
+    }
+    
+    // プログレスバーを更新する
+    function updateProgressBar() {
+      const progress = (currentIndex / currentQuestions.length) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+    
+    // カウンターを更新する
+    function updateCounter() {
+      counter.textContent = `${currentIndex + 1}/${currentQuestions.length}`;
+    }
+    
+    // イベントリスナー設定
+    showAnswerBtn.addEventListener('click', showAnswer);
+    nextBtn.addEventListener('click', nextQuestion);
+    restartBtn.addEventListener('click', initQuiz);
+    
+    // クイズ開始
+    initQuiz();
+  </script>
+</body>
+</html>
