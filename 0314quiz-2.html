@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英単語クイズ（リスト2）</title>
+  <style>
+    :root {
+      --primary: #3a86ff;
+      --secondary: #8338ec;
+      --success: #38b000;
+      --text: #2b2d42;
+      --light-text: #8d99ae;
+      --background: #f8f9fa;
+      --card: #ffffff;
+      --border: #e9ecef;
+      --shadow: rgba(0, 0, 0, 0.05);
+      --transition: all 0.3s ease-in-out;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 640px;
+      margin: 2rem auto;
+      width: 100%;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    
+    .instructions {
+      font-size: 0.9rem;
+      color: var(--light-text);
+      max-width: 36rem;
+      margin: 0 auto 1.5rem;
+    }
+    
+    .card {
+      background-color: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 4px 24px var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background-color: var(--border);
+      position: relative;
+    }
+    
+    .progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      transition: width 0.4s ease-out;
+    }
+    
+    .question-container {
+      padding: 2rem;
+    }
+    
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .counter {
+      font-size: 0.9rem;
+      color: var(--light-text);
+      background-color: var(--background);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+    }
+    
+    .question {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      text-align: center;
+      min-height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .answer {
+      background-color: var(--background);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    
+    .answer.active {
+      opacity: 1;
+      max-height: 500px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .meaning {
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .examples {
+      list-style-type: none;
+    }
+    
+    .examples li {
+      margin-bottom: 0.5rem;
+      position: relative;
+      padding-left: 1.2rem;
+    }
+    
+    .examples li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--secondary);
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    button {
+      flex: 1;
+      padding: 0.9rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(58, 134, 255, 0.2);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    #nextBtn {
+      background-color: var(--secondary);
+    }
+    
+    #nextBtn:hover {
+      box-shadow: 0 4px 12px rgba(131, 56, 236, 0.2);
+    }
+    
+    .icon {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    
+    .completed {
+      text-align: center;
+      padding: 3rem 2rem;
+      display: none;
+    }
+    
+    .completed.active {
+      display: block;
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    .completion-circle {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background-color: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2.5rem;
+    }
+    
+    .completion-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    
+    .completion-message {
+      color: var(--light-text);
+      margin-bottom: 2rem;
+    }
+    
+    .restart-btn {
+      display: inline-flex;
+      margin: 0 auto;
+      background-color: var(--success);
+    }
+    
+    .restart-btn:hover {
+      box-shadow: 0 4px 12px rgba(56, 176, 0, 0.2);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 1s ease-in-out;
+    }
+    
+    @media (max-width: 640px) {
+      .container {
+        margin-top: 1rem;
+      }
+      
+      .question-container {
+        padding: 1.5rem;
+      }
+      
+      .question {
+        font-size: 1.3rem;
+      }
+      
+      .buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>英単語クイズ（リスト2）</h1>
+      <p class="instructions">シンプルな英単語クイズで語彙力を高めましょう。「回答を見る」ボタンで意味と例文を表示し、「次の問題へ」で進みます。</p>
+    </header>
+    
+    <div class="card" id="quizCard">
+      <div class="progress-bar">
+        <div class="progress" id="progressBar"></div>
+      </div>
+      
+      <div class="question-container" id="questionArea">
+        <div class="question-header">
+          <div class="counter" id="counter">0/0</div>
+        </div>
+        
+        <div class="question" id="questionText"></div>
+        
+        <div class="answer" id="answerArea">
+          <div class="meaning" id="meaningText"></div>
+          <ul class="examples" id="examplesList"></ul>
+        </div>
+        
+        <div class="buttons">
+          <button id="showAnswerBtn">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            回答を見る
+          </button>
+          <button id="nextBtn">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M5 12h14"></path>
+              <path d="m12 5 7 7-7 7"></path>
+            </svg>
+            次の問題へ
+          </button>
+        </div>
+      </div>
+      
+      <div class="completed" id="completedArea">
+        <div class="completion-circle">
+          <svg class="icon" viewBox="0 0 24 24" width="40" height="40">
+            <path d="M20 6 9 17l-5-5"></path>
+          </svg>
+        </div>
+        <h2 class="completion-title">おめでとう！</h2>
+        <p class="completion-message">全ての問題が終了しました。お疲れ様でした。</p>
+        <button class="restart-btn" id="restartBtn">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M1 4v6h6"></path>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          もう一度チャレンジ
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 問題データ配列
+    const quizData = [
+      {
+        question: "a bit of",
+        meaning: "少しの/少量の",
+        examples: [
+          "Can I have a bit of your cake?",
+          "She only needs a bit of time to finish the project."
+        ]
+      },
+      {
+        question: "hold back",
+        meaning: "抑制する/抑える/控える",
+        examples: [
+          "She had to hold back her tears during the sad movie.",
+          "The company decided to hold back on the new product launch."
+        ]
+      },
+      {
+        question: "I can't hold back now.Time to step up and prove myself",
+        meaning: "今は我慢できない。自分を証明するために行動する時が来た",
+        examples: [
+          "I can't hold back now.",
+          "Time to step up and prove myself"
+        ]
+      },
+      {
+        question: "Show out",
+        meaning: "実力を発揮する/目立つ/派手に決める",
+        examples: [
+          "She really showed out during the competition.",
+          "The singer showed out with her amazing performance."
+        ]
+      },
+      {
+        question: "i'm not preaching you",
+        meaning: "（あなたに説教しているわけではない）",
+        examples: [
+          "I'm not preaching you to change your mind.",
+          "I'm not preaching you about how to live your life."
+        ]
+      },
+      {
+        question: "preach",
+        meaning: "説教する/説教すること",
+        examples: [
+          "The pastor will preach about love and forgiveness this Sunday.",
+          "She is known for her powerful preaching at the local church."
+        ]
+      },
+      {
+        question: "They can't see how fly I am",
+        meaning: "対象: 彼らは私がどれだけ素晴らしいかわからない",
+        examples: [
+          "They can't see how fly I am",
+          "I don't think they realize how fly I am"
+        ]
+      },
+      {
+        question: "fly",
+        meaning: "「飛ぶ」という動詞/「スタイリッシュ」「カッコいい」「イケてる」（スラング）",
+        examples: [
+          "He always dresses so fly.",
+          "Her new haircut looks really fly."
+        ]
+      },
+      {
+        question: "I've had a rigid set of standards.",
+        meaning: "厳格な/硬直した基準や標準",
+        examples: [
+          "She has a rigid set of rules for her employees.",
+          "The company has a rigid set of safety standards."
+        ]
+      },
+      {
+        question: "put in place",
+        meaning: "制度やルールを導入する/整備する",
+        examples: [
+          "The company decided to put in place a new policy to improve work efficiency.",
+          "The government is putting in place measures to protect the environment."
+        ]
+      }
+    ];
+    
+    // DOM要素取得
+    const questionText = document.getElementById('questionText');
+    const meaningText = document.getElementById('meaningText');
+    const examplesList = document.getElementById('examplesList');
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const answerArea = document.getElementById('answerArea');
+    const showAnswerBtn = document.getElementById('showAnswerBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const questionArea = document.getElementById('questionArea');
+    const completedArea = document.getElementById('completedArea');
+    const restartBtn = document.getElementById('restartBtn');
+    
+    // クイズ管理変数
+    let currentQuestions = [];
+    let currentIndex = 0;
+    
+    // クイズを初期化する
+    function initQuiz() {
+      // ランダムに問題を選ぶ
+      currentQuestions = [...quizData].sort(() => Math.random() - 0.5);
+      currentIndex = 0;
+      
+      // 初期表示
+      updateProgressBar();
+      updateCounter();
+      showQuestion();
+      
+      // 表示エリアの切り替え
+      questionArea.style.display = 'block';
+      completedArea.style.display = 'none';
+      completedArea.classList.remove('active');
+    }
+    
+    // 質問を表示する
+    function showQuestion() {
+      const currentQuestion = currentQuestions[currentIndex];
+      
+      // 質問テキスト設定
+      questionText.textContent = currentQuestion.question;
+      questionText.classList.add('pulse');
+      
+      // アニメーション終了後にクラスを削除
+      setTimeout(() => {
+        questionText.classList.remove('pulse');
+      }, 1000);
+      
+      // 答え非表示
+      answerArea.classList.remove('active');
+      
+      // ボタン状態設定
+      showAnswerBtn.style.display = 'flex';
+      nextBtn.style.display = 'none';
+    }
+    
+    // 答えを表示する
+    function showAnswer() {
+      const currentQuestion = currentQuestions[currentIndex];
+      
+      // 意味テキスト設定
+      meaningText.textContent = `意味：${currentQuestion.meaning}`;
+      
+      // 例文リスト作成
+      examplesList.innerHTML = '';
+      currentQuestion.examples.forEach(example => {
+        const li = document.createElement('li');
+        li.textContent = example;
+        examplesList.appendChild(li);
+      });
+      
+      // 答え表示
+      answerArea.classList.add('active');
+      
+      // ボタン状態設定
+      showAnswerBtn.style.display = 'none';
+      nextBtn.style.display = 'flex';
+    }
+    
+    // 次の問題へ進む
+    function nextQuestion() {
+      currentIndex++;
+      
+      if (currentIndex < currentQuestions.length) {
+        updateProgressBar();
+        updateCounter();
+        showQuestion();
+      } else {
+        // 全問終了
+        completeQuiz();
+      }
+    }
+    
+    // クイズ終了処理
+    function completeQuiz() {
+      questionArea.style.display = 'none';
+      completedArea.style.display = 'block';
+      
+      // アニメーション表示
+      setTimeout(() => {
+        completedArea.classList.add('active');
+      }, 100);
+    }
+    
+    // プログレスバーを更新する
+    function updateProgressBar() {
+      const progress = (currentIndex / currentQuestions.length) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+    
+    // カウンターを更新する
+    function updateCounter() {
+      counter.textContent = `${currentIndex + 1}/${currentQuestions.length}`;
+    }
+    
+    // イベントリスナー設定
+    showAnswerBtn.addEventListener('click', showAnswer);
+    nextBtn.addEventListener('click', nextQuestion);
+    restartBtn.addEventListener('click', initQuiz);
+    
+    // クイズ開始
+    initQuiz();
+  </script>
+</body>
+</html>
